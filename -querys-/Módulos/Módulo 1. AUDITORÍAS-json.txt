@@ -1,0 +1,264 @@
+--FUNCIONES - AUDITORIA
+--1.- Registrar Auditoría JSON
+--2.- Modificar Auditoría JSON
+--3.- Dar Baja Auditoría (solo cambia estado "DE BAJA")
+--4.- Listar Auditorías 
+
+
+-----1.- Registrar Auditoría JSON
+
+CREATE OR REPLACE FUNCTION registrar_auditoria_json(	
+	p_id_expediente_empresa int,
+	p_id_tipo_auditoria int, --ID de AINI 1, AINI 2, etc...
+	p_id_auditor_lider int, --Líder de la auditoría
+	p_detalle_norma json --Se registran las normas ISO de la empresa. Aquí debo enviarlos como json
+)
+    RETURNS TABLE(estado integer, mensaje character varying) 
+AS $$
+declare		
+		v_detalle_norma_cursor refcursor;  --Sirve para almacenar el resultado(registros) de una consulta sql tipo select 
+		v_detalle_norma_registro record; --Sirve para almacenar 1 registro que está en una variable
+	
+		v_id int;				 	--Registrar el ID de la auditoría.
+		v_id_norma int;				--Registrar el ID de AUDITORÍA_TIPO_NORMA
+		v_id_tipo_norma int;
+		
+		jsonA int; 				--Verificar cuántos datos llegan del json
+	begin
+		begin
+	
+			--Seleccionar el último id de Auditoria;
+			select MAX(COALESCE(id, 0)+ 1) from auditoria into v_id;
+			RAISE NOTICE 'ID AUDITORÍA A REGISTRAR: %', v_id; 
+
+			--Seleccionar el último id de AUDITORÍA_TIPO_NORMA;
+			--select MAX(COALESCE(id, 0)+ 1) from auditoria_tipo_norma into v_id_norma;
+			select COALESCE(MAX(id) + 1, 1 ) from auditoria_tipo_norma into v_id_norma;
+
+			
+			RAISE NOTICE 'ID AUDITORÍA_TIPO_NORMA A REGISTRAR: %', v_id_norma; 
+
+			SELECT * INTO jsonA FROM json_array_length(p_detalle_norma) AS ary;
+			RAISE NOTICE 'TAMAÑO DEL JSON: %', jsonA;
+	
+			--Insert en la tabla auditoria
+			insert into auditoria
+				(
+					id,	id_expediente_empresa,	id_tipo_auditoria, id_auditor_lider, estado
+				) 
+			values 
+				(
+					v_id, p_id_expediente_empresa, p_id_tipo_auditoria, p_id_auditor_lider, 'ACTIVO'
+				);	
+
+			open v_detalle_norma_cursor for
+				select 
+					id,
+					id_auditoria,
+					id_tipo_norma
+				from 
+					json_populate_recordset
+					(
+						null::auditoria_tipo_norma,   --utiliza esta tabla como plantilla
+						p_detalle_norma	--parámetro de tipo json						
+					);
+
+			--Recorrer cada registro que está en la variable v_detalle_venta_cursor
+				loop
+					fetch v_detalle_norma_cursor into v_detalle_norma_registro;
+					if FOUND then
+						--Capturamos el valor de cada columna en variables.
+						v_id_tipo_norma 	= v_detalle_norma_registro.id_tipo_norma;
+
+						RAISE NOTICE 'ID_TIPO_NORMA:%', v_id_tipo_norma;
+					RAISE NOTICE 'ID EN EL INSERT ATN: %', v_id_norma;
+					insert into auditoria_tipo_norma
+						(
+							id,
+							id_auditoria,
+							id_tipo_norma
+						)
+					values
+						(
+							v_id_norma,
+							v_id,
+							v_id_tipo_norma
+						);
+					v_id_norma = v_id_norma+1;
+						else
+								--No encuentra más registros, entonces sale del bucle.
+								exit;
+						end if;
+					end loop;				
+		EXCEPTION
+			when others then
+				RAISE EXCEPTION '%', SQLERRM;
+		end;
+		
+		return query select 200, 'Registro exitoso'::character varying;
+	end;
+$$
+language 'plpgsql';
+
+
+select * from registrar_auditoria_json
+(
+	1,2,2,'[	
+	{"id_tipo_norma": 3},
+	{"id_tipo_norma": 4},
+	{"id_tipo_norma": 5}
+	]'
+);
+
+
+-----2.- Modificar Auditoría JSON
+
+CREATE OR REPLACE FUNCTION modificar_auditoria_json(	
+	p_id int,		--ID que representa la auditoría a modificar.
+	p_id_expediente_empresa int,
+	p_id_tipo_auditoria int, --ID de AINI 1, AINI 2, etc...
+	p_id_auditor_lider int, --Líder de la auditoría
+	p_estado varchar(12),
+	p_detalle_norma json --Se registran las normas ISO de la empresa. Aquí debo enviarlos como json
+)
+    RETURNS TABLE(estado integer, mensaje character varying) 
+AS $$
+declare		
+		v_detalle_norma_cursor refcursor;  --Sirve para almacenar el resultado(registros) de una consulta sql tipo select 
+		v_detalle_norma_registro record; --Sirve para almacenar 1 registro que está en una variable
+	
+		v_id_norma int;				--Registrar el ID de AUDITORÍA_TIPO_NORMA
+		v_id_tipo_norma int;		--Almacenar ID_TIPO_NORMA en AUDITORÍA_TIPO_NORMA
+		
+		jsonA int; 				--Verificar cuántos datos llegan del json
+	begin
+		begin
+			--Contar tamaño del JSON
+			SELECT * INTO jsonA FROM json_array_length(p_detalle_norma) AS ary;
+			RAISE NOTICE 'TAMAÑO DEL JSON: %', jsonA;
+	
+			--UPDATE EN AUDITORÍA
+			UPDATE auditoria 
+				set id_empresa = p_id_empresa,
+					id_tipo_auditoria = p_id_tipo_auditoria,
+					id_auditor_lider = p_id_auditor_lider, 
+					estado = p_estado
+				where id = p_id;
+					
+			--Eliminar normas registradas...
+			delete from auditoria_tipo_norma where id_auditoria = p_id;
+			
+			--Seleccionar el último id de AUDITORÍA_TIPO_NORMA;
+			select COALESCE(MAX(id) + 1, 1 ) from auditoria_tipo_norma into v_id_norma;
+			
+			RAISE NOTICE 'PRIMER ID DE LA TABLA AUDITORÍA_TIPO_NORMA A REGISTRAR: %', v_id_norma; 
+			
+			open v_detalle_norma_cursor for
+				select 
+					id,
+					id_auditoria,
+					id_tipo_norma
+				from 
+					json_populate_recordset
+					(
+						null::auditoria_tipo_norma,   --utiliza esta tabla como plantilla
+						p_detalle_norma	--parámetro de tipo json						
+					);
+
+			--Recorrer cada registro que está en la variable v_detalle_venta_cursor
+				loop
+					fetch v_detalle_norma_cursor into v_detalle_norma_registro;
+					if FOUND then
+						--Capturamos el valor de cada columna en variables.
+						v_id_tipo_norma 	= v_detalle_norma_registro.id_tipo_norma;
+
+						RAISE NOTICE 'BUCLE JSON: ID_TIPO_NORMA:%', v_id_tipo_norma;
+					RAISE NOTICE 'ID EN EL INSERT ATN: %', v_id_norma;
+					insert into auditoria_tipo_norma
+						(
+							id,
+							id_auditoria,
+							id_tipo_norma
+						)
+					values
+						(
+							v_id_norma,
+							p_id,
+							v_id_tipo_norma
+						);
+					v_id_norma = v_id_norma+1;
+						else
+								--No encuentra más registros, entonces sale del bucle.
+								exit;
+						end if;
+					end loop;				
+		EXCEPTION
+			when others then
+				RAISE EXCEPTION '%', SQLERRM;
+		end;
+		
+		return query select 200, 'Registro exitoso'::character varying;
+	end;
+$$
+language 'plpgsql';
+
+
+select * from modificar_auditoria_json
+(
+	6, 2, 1, 1, 'ACTIVO','[	
+	{"id_tipo_norma": 1},
+	{"id_tipo_norma": 2},
+	{"id_tipo_norma": 3},
+	{"id_tipo_norma": 4}
+	]'
+)
+
+select * from auditoria_tipo_norma
+
+
+
+
+-----3.- Dar Baja Auditoria (estado = "DE BAJA");
+create or replace function darbaja_auditoria(p_id int)
+RETURNS boolean AS $$ 
+Declare 
+	v_estado varchar(12);
+Begin 
+	--Verificar si es activo o de baja--
+	select estado from auditoria where id = p_id into v_estado;
+	if(v_estado = 'DE BAJA') then
+		RAISE EXCEPTION 'Esta auditoria ya ha sido dado de baja.';
+	else
+		update auditoria set estado = 'DE BAJA' where id = p_id;
+	END IF;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from darbaja_auditoria(2);
+select * from auditoria
+
+
+-----4.- Listar auditorías
+--La primera lista que aparece cuando vamos al botón AUDITORÍAS.
+create or replace function listar_auditorias()
+RETURNS table ("ID" int, "EMPRESA" varchar(150), "TIPO AUDITORÍA" varchar(100), 
+			   "NORMA(S)" text, "ESTADO" varchar(12))
+AS $$ 
+Begin 
+	return query
+		select a.id, e.razon_social, ta.nombre, STRING_AGG (tn.nombre, ', ') Lista_normas, a.estado
+		from auditoria_tipo_norma atn 
+		inner join auditoria a on atn.id_auditoria = a.id
+		inner join tipo_auditoria ta on a.id_tipo_auditoria = ta.id
+		inner join expediente_empresa ex on a.id_expediente_empresa = ex.id
+		inner join empresa e on ex.id_empresa = e.id
+		inner join tipo_norma tn on tn.id = atn.id_tipo_norma
+		GROUP BY
+			a.id, e.razon_social, ta.nombre, a.estado
+		order by 
+			1 desc;
+end;
+$$ language 'plpgsql';
+
+select * from listar_auditorias();

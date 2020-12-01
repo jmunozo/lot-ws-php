@@ -1,0 +1,143 @@
+------------ MÓDULO EVALUACIÓN ---------------
+
+---1.- Listar Evaluaciones----------------------
+create or replace function listar_evaluaciones_2()
+RETURNS table ("N° Expediente" varchar(30), "Empresa" varchar(150), "Estado" varchar(12))
+AS $$ 
+Begin 
+	return query
+		select ev.num_expediente, e.razon_social, ev.estado
+		from evaluacion ev
+		inner join expediente_empresa ep ON ev.id = ep.id_evaluacion
+		inner join empresa e  ON e.id = ep.id_empresa;
+end;
+$$ language 'plpgsql';
+
+select * from listar_evaluaciones_2();
+
+
+---2.- Registrar_evaluación --------------------
+
+CREATE OR REPLACE FUNCTION registrar_evaluacion_2 (
+		p_id_empresa int, 
+		p_num_expediente varchar(15)
+		)
+RETURNS TABLE(estado integer, mensaje character varying)  
+AS $$
+	declare 
+		v_id int;	--ID NUEVO de la tabla EVALUACION
+		v_id_2 int; --ID NUEVO de la TABLA EXPEDIENTE_EMPRESA
+	begin
+		select COALESCE(MAX(id) + 1, 1) from evaluacion into v_id;
+		
+		insert into evaluacion (id, fecha, estado, num_expediente)
+		values (v_id, 'now'::date, 'ACTIVO', p_num_expediente);
+		
+		--Insertar en la tabla Expediente_empresa
+		select COALESCE(MAX(id) + 1, 1) from expediente_empresa into v_id_2;
+		insert into expediente_empresa(id, id_empresa, id_evaluacion) 
+		values	(v_id_2, p_id_empresa, v_id);
+		return query select 200, 'Registro exitoso'::character varying;
+		EXCEPTION
+		when others then
+			RAISE EXCEPTION '%', SQLERRM;		
+	end;
+$$
+language 'plpgsql';
+
+select * from registrar_evaluacion_2(1, 'EXP-0002-2022');
+
+select * from expediente_empresa
+select  * from evaluacion
+
+-------------- 3.- Editar Evaluación--------------------
+
+CREATE OR REPLACE FUNCTION editar_evaluacion_2 (
+		p_id int, 
+		p_estado varchar(12),
+		p_num_expediente varchar(15)
+		)
+RETURNS TABLE(estado integer, mensaje character varying)  
+AS $$
+	begin
+		UPDATE evaluacion 
+		set  
+			estado = p_estado, 
+			num_expediente = p_num_expediente
+		where id = p_id;
+
+	return query select 200, 'Registro exitoso'::character varying;
+		EXCEPTION
+		when others then
+			RAISE EXCEPTION '%', SQLERRM;		
+	end;
+$$
+language 'plpgsql';
+
+select * from editar_evaluacion_2 (1, '2020-10-20', 'OBSOLETO', 'EXP. 201020');
+
+
+-------------- 4.- Dar Baja a Evaluación--------------------
+
+CREATE OR REPLACE FUNCTION darbaja_evaluacion_2 (p_id int)
+RETURNS TABLE(status integer, mensaje character varying)  
+AS $$
+	declare 
+		v_estado varchar(12);
+	begin
+		select estado into v_estado from evaluacion where id = p_id;
+		RAISE NOTICE 'Estado de evaluación: %', v_estado;
+		
+		if(v_estado != 'DE BAJA') then
+			update evaluacion set estado = 'DE BAJA' where id = p_id;
+		else 
+			RAISE EXCEPTION 'EVALUACIÓN % NO SE PUEDE DAR DE BAJA!', p_id
+			USING HINT = 'Ingrese otra evaluación';
+		end if;
+	return query select 200, 'DAR DE BAJA EXITOSO'::character varying;
+	end;
+$$
+language 'plpgsql';
+
+select * from darbaja_evaluacion_2 (1);
+
+
+-----------5.- Registrar acceso a evaluación------------------------
+
+CREATE OR REPLACE FUNCTION registrar_acceso_evaluacion (p_id_usuario int, p_id_evaluacion int)
+RETURNS TABLE(estado integer, mensaje character varying)  
+AS $$
+	declare 
+		 v_id int;
+	begin
+		select COALESCE(MAX(id) + 1, 1) from acceso_evaluacion into v_id;
+		
+		insert into acceso_evaluacion
+				(id, id_evaluacion, id_usuario)
+		values	
+				(v_id, p_id_evaluacion, p_id_usuario);	
+	
+	return query select 200, 'REGISTRO ACCESO A EVALUACIÓN EXITOSO'::character varying;
+	end;
+$$
+language 'plpgsql';
+
+select * from registrar_acceso_evaluacion(1,1);
+
+
+---------6.- Listar accesos a evaluación------------------------------
+CREATE OR REPLACE FUNCTION listar_accesos_evaluacion (p_id_usuario int)
+RETURNS TABLE("ID_USUARIO" int, "N° EXPEDIENTE" varchar(15), "ESTADO" varchar(12))  
+AS $$
+	begin
+		return query
+		select ae.id_usuario, ev.num_expediente , ev.estado 
+				from acceso_evaluacion ae
+				inner join evaluacion ev ON ae.id_evaluacion = ev.id
+		where ae.id_usuario = p_id_usuario;
+		--group by ae.id_usuario, ev.num_expediente, ev.estado
+	end;
+$$
+language 'plpgsql';
+
+select * from listar_accesos_evaluacion(1)

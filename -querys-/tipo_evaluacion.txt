@@ -1,0 +1,65 @@
+--FUNCIONES - TIPO_EVALUACIÓN:
+--1.- Registrar Tipo_evaluación
+--2.- Modificar Tipo_evaluación
+--3.- Eliminar Tipo_evaluación
+
+-----INSERT TIPO_EVALUACIÓN---
+
+insert into tipo_evaluacion values(1, 'Evaluación de las normas ISO', 'Comprende la evaluación de diferentes normas...');
+
+select * from tipo_evaluacion
+
+-----1.- Registrar TIPO_EVALUACIÓN-------------
+create or replace function registrar_tipo_evaluacion
+(
+	p_nombre varchar(150),
+	p_descripcion varchar(250)
+)
+RETURNS boolean AS $$ 
+Declare
+	v_id int;
+Begin 
+	--Seleccionar el último id;
+	select MAX(COALESCE(id, 0)+ 1) from tipo_evaluacion into v_id;
+	
+	insert into tipo_evaluacion
+			(id, nombre, descripcion) 
+	values 
+			(v_id, p_nombre, p_descripcion);	
+	RETURN true;
+end;
+$$ language 'plpgsql';
+
+select *  from registrar_tipo_evaluacion('Evaluaciones de...', '');
+select * from tipo_evaluacion;
+
+-----2.- Modificar Tipo_evaluación -----------
+create or replace function modificar_tipo_evaluacion
+(
+	p_id int,
+	p_nombre varchar(150),
+	p_descripcion varchar(250)
+)
+RETURNS boolean AS $$ 
+Begin 
+	update tipo_evaluacion set 
+			nombre = p_nombre, descripcion = p_descripcion
+	where id = p_id;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from modificar_tipo_evaluacion (2, 'Vamos a evaluar...', 'Aquí tomaremos las ISO');
+select * from tipo_evaluacion;
+
+-----3.- Eliminar Tipo_evaluación -----------
+create or replace function eliminar_tipo_evaluacion(p_id int)
+RETURNS boolean AS $$ 
+Begin 
+	delete from tipo_evaluacion where id = p_id;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from eliminar_tipo_evaluacion(3);
+select * from tipo_evaluacion

@@ -1,0 +1,145 @@
+------------ MÓDULO EMPRESAS---------------
+
+---1.- Listar Empresas----------------------
+
+create or replace function listar_empresas_2()
+RETURNS table (
+		"País" varchar(20), 
+		"Razón social" varchar(150), 
+		"Ruc" varchar(11), 
+		"Dirección" varchar(200), 
+		"Teléfono" varchar(50), 
+		"Estado" varchar(12)
+	)
+AS $$ 
+Begin 
+	return query
+		select pais, razon_social, ruc, direccion, telefono, estado 
+		from empresa;
+end;
+$$ language 'plpgsql';
+
+select * from listar_empresas_2();
+
+---2.- Registrar empresa---------------------
+
+CREATE OR REPLACE FUNCTION registrar_empresa_2 (
+		p_razon_social varchar(150),
+		p_ruc varchar(11),
+		p_pais varchar(20),
+		p_direccion varchar (200),
+		p_telefono varchar(50),
+		p_estado varchar(12)
+		)
+RETURNS TABLE(estado integer, mensaje character varying)  
+AS $$
+	declare 
+		v_id int;	--ID NUEVO de la tabla Empresa
+	begin
+		select COALESCE(MAX(id) + 1, 1) from empresa into v_id;
+		RAISE NOTICE 'ID a insertar: %', v_id;
+		
+		insert into empresa(id, razon_social, ruc, pais, direccion, telefono, estado)
+		values (v_id, p_razon_social, p_ruc, p_pais, p_direccion, p_telefono, p_estado);
+
+		return query select 200, 'Registro exitoso'::character varying;
+		EXCEPTION
+		when others then
+			RAISE EXCEPTION '%', SQLERRM;		
+	end;
+$$
+language 'plpgsql';
+
+
+select * from registrar_empresa_2('Empresa Cix', '10203040501', 
+				'Perú', 'Av. México 2020, Chiclayo', 
+				'933022013', 'ACTIVO');
+
+---3.- Editar empresa---------------------
+
+CREATE OR REPLACE FUNCTION editar_empresa_2 (
+		p_id int,
+		p_razon_social varchar(150),
+		p_ruc varchar(11),
+		p_pais varchar(20),
+		p_direccion varchar (200),
+		p_telefono varchar(50),
+		p_estado varchar(12)
+		)
+RETURNS TABLE(estado integer, mensaje character varying)  
+AS $$
+	begin
+		update empresa 
+		set razon_social = p_razon_social,
+			ruc = p_ruc, 
+			pais = p_pais, 
+			direccion = p_direccion, 
+			telefono = p_telefono,
+			estado = p_estado 
+		where id = p_id;
+		
+		return query select 200, 'Edición exitosa'::character varying;
+		EXCEPTION
+		when others then
+			RAISE EXCEPTION '%', SQLERRM;		
+	end;
+$$
+language 'plpgsql';
+
+select * from editar_empresa_2(4, 'Empresa Chix', '20304050601', 'Perú', 'Av. México 2020, Chiclayo', 
+								  '933022013', 'DE BAJA');
+								  
+ select * from empresa
+
+
+---4.- Dar de Baja a empresa-----------------
+
+CREATE OR REPLACE FUNCTION darbaja_empresa_2 (p_id int)
+RETURNS TABLE(status integer, mensaje character varying)  
+AS $$
+	declare 
+	 v_estado varchar(12);
+	begin
+		select estado into v_estado from empresa where id = p_id;
+		
+		if(v_estado = 'DE BAJA') then
+			RAISE EXCEPTION 'Esta empresa ya fue dada de baja';
+		else 
+			update empresa set estado = 'DE BAJA' where id = p_id;
+		end if;
+		
+		return query select 200, 'De baja exitosa'::character varying;
+		EXCEPTION
+		when others then
+			RAISE EXCEPTION '%', SQLERRM;		
+	end;
+$$
+language 'plpgsql';
+
+select * from darbaja_empresa_2(4)
+
+
+---5.- Listar detalles de la empresa-----------------
+
+create or replace function listar_detalles_empresa()
+RETURNS table ("País" varchar(20), "Razón social" varchar(150), 
+			   "Ruc" varchar(11), "Representante Legal" varchar(250),
+			   "Correo" varchar(150), "Dirección" varchar(200),
+			   "Multisitio" int, "N° Trabajadores" int,
+			   "Turno" varchar(100), "Alcance" varchar(1000),
+			   "Justificación Exlusión Alcance" varchar(1000),
+			   "Gerente General" varchar(250),
+			   "Persona de contacto" varchar(250),
+			   "Estado" varchar(12))
+AS $$ 
+Begin 
+	return query
+		select pais, razon_social, ruc, rep_legal, 
+				correo, direccion, multisitio, num_trabajadores,
+				turno, alcance, justi_exclusion, gerente_general,
+				persona_contacto, estado
+		from empresa;
+end;
+$$ language 'plpgsql';
+
+select * from listar_detalles_empresa();

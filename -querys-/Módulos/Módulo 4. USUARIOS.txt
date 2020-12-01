@@ -1,0 +1,121 @@
+------------ MÓDULO USUARIOS---------------
+
+---1.- Listar Usuarios----------------------
+
+create or replace function listar_usuarios_2()
+RETURNS table (
+					"Email"  varchar(250),
+					"País" varchar(20), 
+					"Rol" varchar(100), 
+					"Nombres y apellidos" varchar(250),
+					"Estado" varchar(12)
+			)
+AS $$ 
+Begin 
+	return query
+			select correo, pais, rol, nombres, estado
+			from usuario;
+end;
+$$ language 'plpgsql';
+
+select * from listar_usuarios_2();
+
+
+---2.- Registrar Usuario---------------------
+
+CREATE OR REPLACE FUNCTION registrar_usuario_2 (
+		p_nombres varchar(250),
+		p_correo varchar(250),
+		p_clave varchar (32),
+		p_rol varchar(100),
+		p_firma varchar(500),
+		p_pais varchar(20)
+		--p_estado varchar(12)
+		)
+RETURNS TABLE(estado integer, mensaje character varying)  
+AS $$
+	declare 
+		v_id int;	--ID NUEVO de la tabla Usuario
+	begin
+		select COALESCE(MAX(id) + 1, 1) from usuario into v_id;
+		RAISE NOTICE 'ID a insertar: %', v_id;
+		
+		insert into usuario(id, nombres, correo, clave, rol, firma, pais, estado)
+		values (v_id, p_nombres, p_correo, p_clave, p_rol, p_firma, p_pais, 'ACTIVO');
+
+		return query select 200, 'Registro exitoso'::character varying;
+		EXCEPTION
+		when others then
+			RAISE EXCEPTION '%', SQLERRM;		
+	end;
+$$
+language 'plpgsql';
+
+select * from registrar_usuario_2('Yajaira Culqui', 'yaja@lot.com', md5('yaja1234'), 'AUDITOR', 'https://foto_yaja', 'Perú');
+
+select * from usuario order by 1 desc 
+
+
+---3.- Editar Usuario---------------------
+
+CREATE OR REPLACE FUNCTION editar_usuario_2 (
+		p_id int,
+		p_nombres varchar(250),
+		p_correo varchar(250),
+		p_clave varchar (32),
+		p_rol varchar(100),
+		p_firma varchar(500),
+		p_pais varchar(20),
+		p_estado varchar(12)
+		)
+RETURNS TABLE(status integer, mensaje character varying)  
+AS $$
+	begin
+		update usuario 
+		set nombres = p_nombres, 
+			correo = p_correo, 
+			clave = p_clave,
+			rol = p_rol, 
+			firma = p_firma, 
+			pais = p_pais, 
+			estado = p_estado
+		where id = p_id;
+		
+		return query select 200, 'Edición exitosa'::character varying;
+		EXCEPTION
+		when others then
+			RAISE EXCEPTION '%', SQLERRM;		
+	end;
+$$
+language 'plpgsql';
+
+select * from editar_usuario_2(6, 'Yajaira', 'yaja@lot.com', md5('yaja123'), 
+							   'AUDITOR', 'https://foto_yaja', 'Perú', 'INACTIVO');
+
+ select * from usuario order by 1 desc
+
+---4.- Dar de Baja a usuario-----------------
+
+CREATE OR REPLACE FUNCTION darbaja_usuario_2 (p_id int)
+RETURNS TABLE(status integer, mensaje character varying)  
+AS $$
+	declare 
+	 v_estado varchar(12);
+	begin
+		select estado into v_estado from usuario where id = p_id;
+		
+		if(v_estado = 'DE BAJA') then
+			RAISE EXCEPTION 'Este usuario ya fue dado de baja';
+		else 
+			update usuario set estado = 'DE BAJA' where id = p_id;
+		end if;
+		
+		return query select 200, 'De baja exitosa'::character varying;
+		EXCEPTION
+		when others then
+			RAISE EXCEPTION '%', SQLERRM;		
+	end;
+$$
+language 'plpgsql';
+
+select * from darbaja_usuario_2(6)

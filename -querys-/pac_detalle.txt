@@ -1,0 +1,46 @@
+--FUNCIONES - PAC_DETALLE
+--1.- Registrar PAC_DETALLE
+--2.- Eliminar PAC_DETALLE
+
+-----INSERT PAC_DETALLE---
+insert into pac_detalle
+			(id, detalle)
+	values 
+			(1, 'NO CONFORMIDAD')
+
+select * from pac_detalle;
+
+-----1.- Registrar Pac_Detalle-----------
+create or replace function registrar_pac_detalle
+						(p_detalle varchar(150))
+RETURNS boolean AS $$ 
+Declare
+	v_id int;
+Begin 
+	--Seleccionar el último id;
+	select MAX(COALESCE(id, 0)+ 1) from pac_detalle into v_id;
+	
+	insert into pac_detalle	(id, detalle) 
+	values (v_id, p_detalle);
+	
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from registrar_pac_detalle
+			('CORRECCIÓN/MITIGACIÓN DE CONSECUENCIAS');
+
+select * from pac_detalle;
+
+-----2.- Eliminar Pac_detalle-----------
+create or replace function eliminar_pac_detalle(p_id int)
+RETURNS boolean AS $$ 
+Begin 
+	delete from pac_detalle where id = p_id;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from eliminar_pac_detalle(3);
+
+select * from pac_detalle;

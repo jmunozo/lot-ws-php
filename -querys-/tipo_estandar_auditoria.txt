@@ -1,0 +1,71 @@
+--FUNCIONES - TIPO_ESTÁNDAR_AUDITORIA
+--1.- Registrar Tipo_estandar_auditoria
+--2.- Eliminar Tipo_estandar_auditoria
+
+-----INSERT TIPO_ESTÁNDAR_AUDITORIA---
+insert into tipo_estandar_auditoria
+		(id, apartado_general, apartado_especifico, requisito,
+		info_documentada, pregunta)
+values (1, '4. Contexto de la Organización', '4.1 Comprender la organización y su contexto',
+		'La organización debe determinar las cuestiones externas e internas que son pertinentes 
+		para su propósito y su dirección estratégica, y que afectan a su capacidad para lograr 
+		los resultados previstos de su sistema de gestión de la calidad.', '',
+		'¿De qué manera la organización a determinado sus cuestiones internas y externas que 
+		afectan al sistema de calidad?'
+	   )
+
+select * from tipo_estandar_auditoria
+
+-----1.- Registrar Tipo_estandar_auditoria-----------
+create or replace function registrar_tipo_estandar_auditoria
+(
+	p_apartado_general varchar(3000),
+	p_apartado_especifico varchar (3000),
+	p_requisito varchar(3000),
+	p_info_documentada varchar(3000),
+	p_pregunta varchar(3000)
+)
+RETURNS boolean AS $$ 
+Declare
+	v_id int;
+Begin 
+	--Seleccionar el último id;
+	select MAX(COALESCE(id, 0)+ 1) from tipo_estandar_auditoria into v_id;
+	
+	insert into tipo_estandar_auditoria
+			(
+				id, apartado_general, apartado_especifico, requisito,
+				info_documentada, pregunta
+			) 
+	values (
+				v_id, p_apartado_general, p_apartado_especifico,
+				p_requisito, p_info_documentada, p_pregunta		
+			);	
+	RETURN true;
+end;
+$$ language 'plpgsql';
+
+select *  from registrar_tipo_estandar_auditoria
+			(
+				'4. Contexto de la Organización', 
+				'4.2 Comprensión de las necesidades y expectativas de las partes interesadas',
+				'Debido a su efecto o efecto potencial en la capacidad de la organización de 
+				proporcionar regularmente productos y servicios que satisfagan los requisitos 
+				del cliente y los legales y reglamentarios aplicables, la organización debe determinar:',
+				'',
+				'¿De que manera la organización identifica las partes interesadas del SGC?'
+			);
+			
+select * from tipo_estandar_auditoria;
+
+-----2.- Eliminar Tipo_estandar_auditoria -----------
+create or replace function eliminar_tipo_estandar_auditoria(p_id int)
+RETURNS boolean AS $$ 
+Begin 
+	delete from tipo_estandar_auditoria where id = p_id;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from eliminar_tipo_estandar_auditoria(2);
+select * from tipo_estandar_auditoria

@@ -1,0 +1,236 @@
+/* BASE DE DATOS SISTEMA AUDITORIA-LOT */
+
+create table usuario
+(
+	id int not null primary key,
+	rol varchar (100) not null,
+	nombres varchar(250) not null,
+	correo varchar (250) not null,
+	clave varchar (32) not null,
+	estado varchar (12) not null,
+	firma varchar(300)
+);
+
+create table empresa
+(
+	id int not null primary key,
+	razon_social varchar(150) not null,
+	ruc varchar(11) not null,
+	rep_legal varchar(250),
+	correo varchar(150),
+	pais varchar(20),
+	direccion varchar(200) not null,
+	multisitio int,
+	num_trabajadores int,
+	turno varchar(100),
+	telefono varchar(50),
+	alcance varchar(1000),
+	justi_exclusion varchar(1000),
+	gerente_general varchar (250),
+	persona_contacto varchar (250),
+	estado varchar(12)
+);
+
+
+create table tipo_norma
+(
+	id int primary key not null,
+	nombre varchar(150) not null,
+	descripcion varchar(250) not null
+);	
+
+create table evaluacion
+(
+	id int primary key not null,
+	num_expediente varchar(15),
+	fecha varchar(50) not null,
+	estado varchar(12) not null,	
+);
+
+create table  tipo_auditoria
+(
+	id int primary key not null,
+	nombre varchar(100) not null
+);
+
+create table auditoria
+(
+	id int primary key not null,
+	id_expediente_empresa int not null,
+	id_tipo_auditoria int not null,
+	id_auditor_lider int not null,
+	fecha varchar(50) not null,
+	codigo_nace varchar(20) not null,
+	criterios varchar(500),
+	objetivos varchar(1500),
+	auditores varchar(1500),
+	auditores_practicantes varchar(1500),
+	expertos_tecnicos varchar(1500),
+	observadores varchar(1500),
+	resumen_procesos varchar(3000),
+	fecha_entrega_informe varchar(50),
+	num_informe varchar(20),
+	descripcion varchar(200), 
+	estado varchar(12),
+    FOREIGN KEY (id_expediente_empresa) REFERENCES Expediente_empresa(id),
+    FOREIGN KEY (id_tipo_auditoria) REFERENCES Tipo_auditoria(id),
+    FOREIGN KEY (id_auditor_lider) REFERENCES usuario(id)
+);
+
+/* Tabla que podría crearse, aunque habría redundancia.
+create table disposicion_final_auditoria
+(
+	id int primary key not null,
+	id_auditoria int not null references Auditoria,
+	disposicion varchar(3000),
+	fila int
+);
+*/
+
+create table auditoria_tipo_norma
+(
+	id int primary key not null,
+	id_auditoria int not null,
+	id_tipo_norma int not null,
+    FOREIGN KEY(id_auditoria) REFERENCES Auditoria(id),
+    FOREIGN KEY(id_tipo_norma) REFERENCES Tipo_norma(id)
+);
+
+/*Registro de usuarios que acceden a Auditoría*/
+create table acceso_auditoria
+(
+	id int primary key not null,
+	id_auditoria int not null,
+	id_usuario int not null,
+	fecha varchar(32),
+	FOREIGN KEY(id_auditoria) REFERENCES Auditoria(id),
+	FOREIGN KEY(id_usuario) REFERENCES Usuario(id)
+);
+
+/*Registro de usuarios que acceden a evaluación.*/
+create table acceso_evaluacion
+(
+	id int primary key not null,
+	id_evaluacion int not null ,
+	id_usuario int not null,
+	fecha varchar(32),
+	FOREIGN KEY(id_evaluacion) REFERENCES Evaluacion(id),
+	FOREIGN KEY(id_usuario) REFERENCES Usuario(id)
+);
+
+create table relacion_participante_auditoria
+(
+	id int primary key not null,
+	id_auditoria int not null,
+	nombre_completo varchar(250) not null,
+	departamento varchar(100) not null,
+	FOREIGN KEY(id_auditoria) REFERENCES Auditoria(id)
+);
+
+create table tipo_estandar_auditoria
+(
+	id int primary key not null,
+	apartado_general varchar(3000),
+	apartado_especifico varchar (3000),
+	requisito varchar(3000),
+	info_documentada varchar(3000),
+	pregunta varchar(3000)
+);
+
+create table estandar_auditoria_check_list
+(
+	id int primary key not null,
+	id_tipo_estandar_auditoria int,
+	id_auditoria int not null,
+	hora varchar(30),
+	auditado text,
+	proceso text, 
+	magnitud text,	
+	descripcion text,
+	evidencia text,
+	conforme text,
+	no_conforme text,
+	nivel_nc varchar(12),
+	tipo_norma int not null,
+	fila int,
+	hora_modificacion timestamp,
+	id_usuario_modifica int,
+    FOREIGN KEY (id_tipo_estandar_auditoria) REFERENCES Tipo_estandar_auditoria(id),
+    FOREIGN KEY (id_auditoria) REFERENCES Auditoria (id),
+	FOREIGN KEY (tipo_norma) REFERENCES Tipo_norma(id),
+    FOREIGN KEY (id_usuario_modifica) REFERENCES Usuario(id)
+);
+
+create table estandar_auditoria_temporal
+(
+	id int primary key not null,
+	id_estandar_auditoria int,
+	nombre_columna varchar(50),
+	valor_columna varchar(3000),
+	hora_modificacion timestamp,
+	id_usuario_modifica int,
+    FOREIGN KEY(id_estandar_auditoria) REFERENCES estandar_auditoria_check_list(id),
+    FOREIGN KEY(id_usuario_modifica) REFERENCES Usuario(id)
+);
+
+create table fase
+(
+	id int primary key not null,
+	fase varchar(100) not null, 
+	descripcion varchar(300)
+);
+
+create table conclusion_fase_auditoria
+(
+	id_auditoria int,
+	id_fase int,
+	descripcion varchar(3000),
+	conclusion varchar(3000), 
+	fila int,
+	primary key(id_auditoria, id_fase, fila),
+    FOREIGN KEY(id_auditoria) REFERENCES Auditoria(id),
+    FOREIGN KEY(id_fase) REFERENCES Fase(id)
+);
+
+create table pac_detalle
+(
+	id int primary key not null,
+	detalle varchar(150) not null 
+);
+
+create table pac_campo
+(
+	id int primary key not null,
+	campo varchar(200) not null,
+	id_pac_detalle int,
+	FOREIGN KEY(id_pac_detalle) REFERENCES pac_detalle(id)
+);
+
+
+create table pac
+(
+	id int primary key not null, 
+	id_estandar_check_list int ,
+	id_pac_campo int not null,
+	valor varchar(2000), 
+	fila int,
+   	FOREIGN KEY(id_estandar_check_list) REFERENCES estandar_auditoria_check_list(id),
+ 	FOREIGN KEY(id_pac_campo) REFERENCES Pac_campo(id) 
+);
+
+create table expediente_empresa
+(
+	id int primary key not null,
+	id_empresa int not null, --¿De qué empresa será el expediente?
+	id_evaluacion int not null ,
+	FOREIGN KEY(id_empresa) REFERENCES Empresa(id),
+	FOREIGN KEY(id_evaluacion) REFERENCES Evaluacion(id)
+);	
+
+create table detalle_expediente(
+	id int primary key not null,
+	id_expediente_empresa int,
+	expediente varchar(50),  --Cuestionario, cotización/contrato, programa de auditoría, etc.
+	documento varchar(255),  --Ruta a guardar.
+	FOREIGN KEY(id_expediente_empresa) REFERENCES Expediente_empresa(id)
+);	

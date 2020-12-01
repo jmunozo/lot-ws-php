@@ -1,0 +1,45 @@
+--FUNCIONES - RELACIÓN PARTICIPANTE AUDITORÍA:
+--1.- Registrar relacion_participante_auditoria
+--2.- Eliminar relacion_participante_auditoria
+
+-----INSERT RELACIÓN_PARTICIPANTE_AUDITORIA---
+
+insert into relacion_participante_auditoria values(1, 1, 'Rodrigo Torres', 'Departamento de Compras');
+select * from relacion_participante_auditoria;
+
+-----1.- Registrar Relación participante auditoría-------------
+create or replace function registrar_relacion_participante_auditoria
+(
+	p_id_auditoria int,
+	p_nombre_completo varchar(250),
+	p_departamento varchar(100)
+)
+RETURNS boolean AS $$ 
+Declare
+	v_id int;
+Begin 
+	--Seleccionar el último id;
+	select MAX(COALESCE(id, 0)+ 1) from relacion_participante_auditoria into v_id;
+	
+	insert into relacion_participante_auditoria
+			(id, id_auditoria, nombre_completo,departamento) 
+	values 
+			(v_id, p_id_auditoria, p_nombre_completo, p_departamento);	
+	RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from registrar_relacion_participante_auditoria(1, 'Lucho Vásquez', 'Almacén');
+select * from relacion_participante_auditoria;
+
+-----2.- Eliminar Relacion_participante_auditoria------------
+create or replace function eliminar_relacion_participante_auditoria(p_id int)
+RETURNS boolean AS $$ 
+Begin 
+	delete from relacion_participante_auditoria where id = p_id;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from eliminar_relacion_participante_auditoria(2);
+select * from relacion_participante_auditoria;

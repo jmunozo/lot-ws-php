@@ -1,0 +1,65 @@
+--FUNCIONES - ESTÁNDAR_AUDITORIA_TEMPORAL
+--1.- Registrar Estandar_auditoria_temporal
+--2.- Eliminar Estandar_auditoria_temporal
+
+--INSERT ESTÁNDAR_AUDITORIA_TEMPORAL
+
+insert into estandar_auditoria_temporal
+			(
+				id,	id_estandar_auditoria, nombre_columna, 
+				valor_columna, hora_modificacion, id_usuario_modifica
+			)
+values		(
+				1, 1, 'auditado', 'Camilo José Manuel',
+				'2026-11-05 16:10:25', 1
+			); 
+
+select * from estandar_auditoria_temporal;
+
+-----1.- Registrar Estándar_auditoria_temporal-----------
+create or replace function registrar_estandar_auditoria_temporal
+(
+	p_id_estandar_auditoria int,	--referencia tabla estandar_auditoria_check_list,
+	p_nombre_columna varchar(50),
+	p_valor_columna varchar(3000),
+	p_hora_modificacion timestamp,
+	p_id_usuario_modifica int 	--referencia tabla Usuario
+)	
+RETURNS boolean AS $$ 
+Declare
+	v_id int;
+Begin 
+	--Seleccionar el último id;
+	select MAX(COALESCE(id, 0)+ 1) from estandar_auditoria_temporal into v_id;
+	insert into estandar_auditoria_temporal
+				(
+					id,	id_estandar_auditoria, nombre_columna, 
+					valor_columna, hora_modificacion, id_usuario_modifica
+				)
+	values		(
+					v_id, p_id_estandar_auditoria, p_nombre_columna, 
+					p_valor_columna, p_hora_modificacion, p_id_usuario_modifica
+				); 
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select *  from registrar_estandar_auditoria_temporal
+			(
+				1, 'auditado', 'Roberto Firmino',
+				'2026-11-06 16:00:25', 1
+			);
+					
+select * from estandar_auditoria_temporal;
+
+-----2.- Eliminar Estandar_auditoria_temporal -----------
+create or replace function eliminar_estandar_auditoria_temporal(p_id int)
+RETURNS boolean AS $$ 
+Begin 
+	delete from estandar_auditoria_temporal where id = p_id;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from eliminar_estandar_auditoria_temporal(3);
+select * from estandar_auditoria_temporal;

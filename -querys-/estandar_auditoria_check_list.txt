@@ -1,0 +1,143 @@
+--FUNCIONES - ESTÁNDAR_AUDITORIA_CHECK_LIST
+--1.- Registrar Estandar_auditoria_check_list
+--2.- Modificar Estandar_auditoria_check_list
+--3.- Dar Baja Estandar_auditoria_check_list
+--4.- Listar Estandar_auditoria_check_list
+
+--INSERT ESTÁNDAR_AUDITORIA_CHECK_LIST
+
+insert into estandar_auditoria_check_list
+			(
+				id,	id_tipo_estandar_auditoria, id_auditoria, hora, auditado,
+				proceso, magnitud, descripcion, evidencia, conforme, no_conforme,
+				nivel_nc, tipo_norma, fila, hora_modificacion, id_usuario_modifica
+			)
+values		(
+				2, 1, 1, '09:00', 'Julio Pérez', 'Compras', 'La magnitud es ...', 
+				'La descripcion va llenándose','' ,'Sí' ,'' ,'' , 1, 0, '2026-10-22 16:10:25', 1
+			); 
+
+select * from estandar_auditoria_check_list;
+
+-----1.- Registrar Estándar_auditoria_check_list-----------
+create or replace function registrar_estandar_auditoria_check_list
+(
+	p_id_tipo_estandar_auditoria int,
+	p_id_auditoria int,
+	p_hora varchar(30),
+	p_auditado varchar(3000),
+	p_proceso varchar(3000), 
+	p_magnitud varchar(3000),	
+	p_descripcion varchar(3000),
+	p_evidencia varchar(3000),
+	p_conforme varchar(100),
+	p_no_conforme varchar(3000),
+	p_nivel_nc varchar(12),
+	p_tipo_norma int,  --Referencia tabla TIPO_NORMA
+	p_fila int,
+	p_hora_modificacion timestamp,
+	p_id_usuario_modifica int 		--Referencia tabla USUARIO
+)	
+RETURNS boolean AS $$ 
+Declare
+	v_id int;
+Begin 
+	--Seleccionar el último id;
+	select MAX(COALESCE(id, 0)+ 1) from estandar_auditoria_check_list into v_id;
+	insert into estandar_auditoria_check_list
+			(
+				id,	id_tipo_estandar_auditoria, id_auditoria, hora, auditado,
+				proceso, magnitud, descripcion, evidencia, conforme, no_conforme,
+				nivel_nc, tipo_norma, fila, hora_modificacion, id_usuario_modifica
+			)
+	values
+			(
+				v_id, p_id_tipo_estandar_auditoria, p_id_auditoria, p_hora, p_auditado,
+				p_proceso, p_magnitud, p_descripcion, p_evidencia, p_conforme, p_no_conforme,
+				p_nivel_nc, p_tipo_norma, p_fila, p_hora_modificacion, p_id_usuario_modifica
+			); 
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select *  from registrar_estandar_auditoria_check_list
+			(
+				1, 1, '09:00', 'José Pérez', 'Compras', 'La magnitud es ...', 
+				'La descripcion va llenándose','' ,'Sí' ,'' ,'' , 1, 0, '2026-10-22 16:10:25', 1
+			);
+					
+select * from estandar_auditoria_check_list;
+
+
+-----2.- Modificar Estandar_auditoria_check_list -----------
+create or replace function modificar_estandar_auditoria_check_list
+(
+	p_id int,
+	p_id_tipo_estandar_auditoria int,
+	p_id_auditoria int,
+	p_hora varchar(30),
+	p_auditado varchar(3000),
+	p_proceso varchar(3000), 
+	p_magnitud varchar(3000),	
+	p_descripcion varchar(3000),
+	p_evidencia varchar(3000),
+	p_conforme varchar(100),
+	p_no_conforme varchar(3000),
+	p_nivel_nc varchar(12),
+	p_tipo_norma int,  --Referencia tabla TIPO_NORMA
+	p_fila int,
+	p_hora_modificacion timestamp,
+	p_id_usuario_modifica int 		--Referencia tabla USUARIO	
+)
+RETURNS boolean AS $$ 
+Begin 
+	update estandar_auditoria_check_list set 
+			id_tipo_estandar_auditoria = p_id_tipo_estandar_auditoria, 
+			id_auditoria = p_id_auditoria, hora = p_hora, auditado = p_auditado,
+			proceso = p_proceso, magnitud = p_magnitud, descripcion = p_descripcion,
+			evidencia = p_evidencia, conforme = p_conforme, no_conforme = p_no_conforme,
+			nivel_nc = p_nivel_nc, tipo_norma = p_tipo_norma, fila = p_fila,
+			hora_modificacion = p_hora_modificacion, id_usuario_modifica = p_id_usuario_modifica
+	where id = p_id;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from modificar_estandar_auditoria_check_list
+				(
+					1, 1, 1, '09:00', 'Lucho Paz', 'Compras', 'La magnitud es ...', 
+					'La descripcion va llenándose','' ,'Sí' ,'' ,'' , 1, 0, '2026-10-22 16:10:25', 1
+				);
+
+select * from estandar_auditoria_check_list;
+
+-----3.- Eliminar Estandar_auditoria_check_list -----------
+create or replace function eliminar_estandar_auditoria_check_list(p_id int)
+RETURNS boolean AS $$ 
+--Declare 
+--	v_estado varchar(12);
+Begin 
+	delete from estandar_auditoria_check_list where id = p_id;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from eliminar_estandar_auditoria_check_list(3);
+select * from estandar_auditoria_check_list;
+
+-----4.- Listar Auditorias -----------
+create or replace function listar_estandar_auditoria_check_list()
+RETURNS table ("N° Auditoria" int, "Hora" varchar(30), "Auditado" varchar(3000), 
+			   "Proceso" varchar(3000), "Magnitud" varchar(3000), "Descripción" varchar(3000),
+			   "Evidencia" varchar(3000), "Conforme" varchar(100), "No Conforme" varchar(3000),
+			   "Nivel NC" varchar(12))
+AS $$ 
+Begin 
+	return query
+		select id_auditoria, hora, auditado, proceso, magnitud, descripcion, evidencia, conforme,
+				no_conforme, nivel_nc
+		from estandar_auditoria_check_list;
+end;
+$$ language 'plpgsql';
+
+select * from listar_estandar_auditoria_check_list();

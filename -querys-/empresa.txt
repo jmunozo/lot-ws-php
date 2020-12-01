@@ -1,0 +1,139 @@
+--FUNCIONES - EMPRESA:
+--1.- Registrar Empresa
+--2.- Modificar Empresa
+--3.- Dar Baja Empresa
+--4.- Listar Empresas
+
+-----INSERT EMPRESA---
+
+insert into empresa values(1, 'S0035/2018/INC', 'DULCEMANIA AUTOSERVICIOS S.R.L', '10337750401', 
+						   'Wilson Vergara Culqui', 'wilson@dulcemania.com', 'Av. México 2020', 2, 30, 
+						   '09:00 - 18:00', '072102030', 'Actividades, productos, lugares', '--', 
+						   'Wilson Vergara Culqui', 'Lucas Vergara Culqui', 'ACTIVO');
+
+select * from empresa;
+
+-----1.- Registrar Empresa-----------
+create or replace function registrar_empresa
+(
+	p_num_expediente varchar(30), 
+	p_razon_social varchar(150), 
+	p_ruc varchar(11),
+	p_rep_legal varchar(250),
+	p_correo varchar(150), 
+	p_direccion varchar(200), 
+	p_multisitio int, 
+	p_num_trabajadores int, 
+	p_turno varchar,
+	p_telefono varchar(50), 
+	p_alcance varchar(1000), 
+	p_justi_exclusion varchar(1000), 
+	p_gerente_general varchar(250),
+	p_persona_contacto varchar(250)
+)
+RETURNS boolean AS $$ 
+Declare
+	v_id int;
+Begin 
+	--Seleccionar el último id;
+	select MAX(COALESCE(id, 0)+ 1) from empresa into v_id;
+	
+	insert into empresa
+			(
+				id,	num_expediente, razon_social, ruc, rep_legal, correo, direccion,
+				multisitio,	num_trabajadores, turno, telefono, alcance, justi_exclusion,
+				gerente_general, persona_contacto, estado
+			) 
+	values (
+				v_id, p_num_expediente, p_razon_social, p_ruc, p_rep_legal, p_correo, p_direccion, 
+				p_multisitio, p_num_trabajadores, p_turno, p_telefono, p_alcance, p_justi_exclusion, 
+				p_gerente_general, p_persona_contacto, 'ACTIVO'
+			);	
+	
+	RETURN true;
+end;
+$$ language 'plpgsql';
+
+select *  from registrar_empresa('S0035/2018/INC', 'SERVIMEDICOS', '34566543987', 
+						   'Roque Ruíz', 'roque@servimedicos.com', 'Av. José L. Ortiz 764', 
+							1, 30, '08:30 - 18:30', '074200304', 'Servicios Médicos', '--', 
+						   '', '');
+select * from empresa;
+
+-----2.- Modificar Empresa -----------
+create or replace function modificar_empresa
+(
+	p_id int,
+	p_num_expediente varchar(30), 
+	p_razon_social varchar(150), 
+	p_ruc varchar(11),
+	p_rep_legal varchar(250),
+	p_correo varchar(150), 
+	p_direccion varchar(200), 
+	p_multisitio int, 
+	p_num_trabajadores int, 
+	p_turno varchar,
+	p_telefono varchar(50), 
+	p_alcance varchar(1000), 
+	p_justi_exclusion varchar(1000), 
+	p_gerente_general varchar(250),
+	p_persona_contacto varchar(250),
+	p_estado varchar(12)
+)
+RETURNS boolean AS $$ 
+Begin 
+	update empresa set 
+			num_expediente = p_num_expediente, razon_social = p_razon_social, 
+			ruc = p_ruc, rep_legal = p_rep_legal, correo = p_correo, 
+			direccion = p_direccion, multisitio = p_multisitio, 
+			num_trabajadores = p_num_trabajadores, turno = p_turno, 
+			telefono = p_telefono, alcance = p_alcance, 
+			justi_exclusion = p_justi_exclusion, gerente_general = p_gerente_general, 
+			persona_contacto = p_persona_contacto, estado = p_estado
+	where id = p_id;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from modificar_empresa (2, 'S0035/2018/INC', 'SERVIMEDICOS', '34566543987', 
+						   'Roque Ruíz', 'roque@servimedicos.com', 'Av. José L. Ortiz 764', 
+							1, 30, '08:30 - 18:30', '074200304', 'Servicios Médicos', '',
+						   '', 'Jorge Luna', 'INACTIVO');
+
+select * from empresa;
+
+-----3.- Dar Baja a Empresa -----------
+create or replace function darbaja_empresa(p_id int)
+RETURNS boolean AS $$ 
+Declare 
+	v_estado varchar(12);
+Begin 
+	--Verificar si es activo o de baja--
+	select estado from empresa where id = p_id into v_estado;
+	if(v_estado = 'DE BAJA') then
+		RAISE EXCEPTION 'Esta empresa ya ha sido dado de baja.';
+	else
+		update empresa set estado = 'DE BAJA' where id = p_id;
+	END IF;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from darbaja_empresa(2);
+select * from empresa
+
+-----4.- Listar Empresas -----------
+create or replace function listar_empresas()
+RETURNS table ("N° Expediente" varchar(30), "Razon social" varchar(150), 
+			   "Ruc" varchar(11), "Dirección" varchar(200), "Teléfono" varchar(50), 
+				"Gerente General" varchar(250), "Estado" varchar(12))
+AS $$ 
+Begin 
+	return query
+		select num_expediente, razon_social, ruc, direccion, telefono, 
+				gerente_general, estado 
+		from empresa;
+end;
+$$ language 'plpgsql';
+
+select * from listar_empresas();

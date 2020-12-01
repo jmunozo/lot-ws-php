@@ -1,0 +1,73 @@
+--FUNCIONES - TIPO_NORMA:
+--1.- Registrar Tipo_norma
+--2.- Modificar Tipo_norma
+--3.- Eliminar Tipo_norma
+
+-----INSERT TIPO_NORMA---
+
+insert into tipo_norma values(1, 'ISO-9001-2015', 'Esta ISO se centra en la calidad de gestión...');
+select * from tipo_norma;
+
+-----1.- Registrar TIPO_NORMA-------------
+create or replace function registrar_tipo_norma
+(
+	p_nombre varchar(150),
+	p_descripcion varchar(250)
+)
+RETURNS boolean AS $$ 
+Declare
+	v_id int;
+Begin 
+	--Seleccionar el último id;
+	select MAX(COALESCE(id, 0)+ 1) from tipo_norma into v_id;
+	
+	insert into tipo_norma
+			(id, nombre, descripcion) 
+	values 
+			(v_id, p_nombre, p_descripcion);	
+	RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from registrar_tipo_norma('ISO-14001-2015', 'La 14001 es una ISO...');
+select * from registrar_tipo_norma('ISO-21001-2018', 'Sistema de Gestión para organizaciones educativas.');
+select * from registrar_tipo_norma('ISO-22000-2018', 'Sistema de Gestión de seguridad alimentaria.');
+select * from registrar_tipo_norma('ISO-37001-2016', 'Sistema de Gestión Antisiborno.');
+select * from registrar_tipo_norma('ISO-45001-2018', 'Sistema de Gestión de Seguridad y Salud en el trabajo.');
+select * from registrar_tipo_norma('ISO-50001-2018', 'Sistema de Gestión de la Energía.');
+select * from registrar_tipo_norma('SA-8000-2014', 'Reponsabilidad Social');
+
+
+
+select * from tipo_norma;
+
+-----2.- Modificar Tipo_norma -----------
+create or replace function modificar_tipo_norma
+(
+	p_id int,
+	p_nombre varchar(150),
+	p_descripcion varchar(250)
+)
+RETURNS boolean AS $$ 
+Begin 
+	update tipo_norma set 
+			nombre = p_nombre, descripcion = p_descripcion
+	where id = p_id;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from modificar_tipo_norma (2, 'ISO-14001-2016', 'Aquí tomaremos las ISO');
+select * from tipo_norma;
+
+-----3.- Eliminar Tipo_norma-----------
+create or replace function eliminar_tipo_norma(p_id int)
+RETURNS boolean AS $$ 
+Begin 
+	delete from tipo_norma where id = p_id;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from eliminar_tipo_norma(2);
+select * from tipo_norma;

@@ -1,0 +1,86 @@
+--FUNCIONES - PAC
+--1.- Registrar PAC
+--2.- Eliminar PAC
+
+-----INSERT PAC---
+insert into pac
+			(id, id_estandar_check_list, id_pac_campo, valor, fila)
+	values 
+			(1, 1, 11, 'ÁREA DE VENTAS', 1)
+
+select * from pac;
+
+-----1.- Registrar Pac-----------
+create or replace function registrar_pac
+(
+	p_id_estandar_check_list int,
+	p_id_pac_campo int,
+	p_valor varchar (2000),
+	p_fila int
+)
+RETURNS boolean AS $$ 
+Declare
+	v_id int;
+Begin 
+	--Seleccionar el último id;
+	select MAX(COALESCE(id, 0)+ 1) from pac into v_id;
+	
+	insert into pac
+			(id, id_estandar_check_list, id_pac_campo, valor, fila)	
+	values (v_id, p_id_estandar_check_list, p_id_pac_campo, p_valor, p_fila);
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from registrar_pac
+				(1, 12, 'Doc. 001', 2);
+
+select * from pac;
+
+-----2.- Modificar Pac (solo modificar VALOR)-----------
+create or replace function modificar_pac
+(
+	p_id int,
+	p_valor varchar (2000)
+)
+returns boolean AS $$
+BEGIN 
+	update pac 
+			set valor = p_valor	where id = p_id;
+return true;
+END;
+$$ language 'plpgsql';
+
+select * from modificar_pac(2, 'No hay documentos...');
+
+select * from pac;
+
+-----3.- Eliminar Pac -----------
+create or replace function eliminar_pac(p_id int)
+returns boolean AS $$
+BEGIN 
+	delete from pac	where id = p_id;
+return true;
+END;
+$$ language 'plpgsql';
+
+select * from eliminar_pac(3);
+
+-----4.- Listar Pac -----------
+create or replace function listar_pac(p_id int)
+returns table("ID" int, "ID ESTÁNDAR" int, "CÓDIGO" int, "DETALLE" varchar(150),
+			  "CAMPO" varchar(200), "RESPUESTA" varchar(2000), "ÍTEM" int)
+AS $$
+BEGIN 
+	return query
+	select pa.id, pa.id_estandar_check_list, pc.id, pd.detalle, pc.campo, valor, fila
+		from pac pa 
+		inner join pac_campo pc on pa.id_pac_campo = pc.id
+		inner join pac_detalle pd on pc.id_pac_detalle = pd.id
+	where pa.id = p_id;
+END;
+$$ language 'plpgsql';
+
+select * from listar_pac(1);
+
+select * from pac;

@@ -1,0 +1,101 @@
+--FUNCIONES - EVALUACIÓN:
+--1.- Registrar Evaluación
+--2.- Modificar Evaluación
+--3.- Eliminar Evaluación
+--4.- Listar Evaluación
+
+-----INSERT EVALUACIÓN---
+
+insert into evaluacion values(2, 1, 1, 1, '09/09/2020', '09:00', '11:00', '', 'Esta evaluación tiene carácter de urgencia', 'ACTIVO' );
+select * from evaluacion;
+
+-----1.- Registrar EVALUACIÓN-------------
+create or replace function registrar_evaluacion
+(
+	p_id_empresa int,
+	p_id_tipo_evaluacion int,
+	p_id_evaluador_lider int,
+	p_fecha varchar(50),
+	p_hora_inicio varchar(12),
+	p_hora_fin varchar(12),
+	p_conclusion varchar(3000),
+	p_descripcion varchar(200)
+)
+RETURNS boolean AS $$ 
+Declare
+	v_id int;
+Begin 
+	--Seleccionar el último id;
+	select MAX(COALESCE(id, 0)+ 1) from evaluacion into v_id;
+	
+	insert into evaluacion
+			(
+				id,	id_empresa, id_tipo_evaluacion,	id_evaluador_lider,
+				fecha, hora_inicio,	hora_fin, conclusion, descripcion, estado
+			) 
+	values 
+			(
+				v_id, p_id_empresa, p_id_tipo_evaluacion, p_id_evaluador_lider,
+				p_fecha, p_hora_inicio,	p_hora_fin, p_conclusion, p_descripcion, 'ACTIVO'
+			);	
+	RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from registrar_evaluacion(2, 1, 1, '20/10/2020', '09:00', '11:00', '', 'Esta evaluación tiene carácter de urgencia');
+select * from evaluacion;
+
+-----2.- Modificar Evaluación -----------
+create or replace function modificar_evaluacion
+(
+	p_id int,
+	p_id_empresa int,
+	p_id_tipo_evaluacion int,
+	p_id_evaluador_lider int,
+	p_fecha varchar(50),
+	p_hora_inicio varchar(12),
+	p_hora_fin varchar(12),
+	p_conclusion varchar(3000),
+	p_descripcion varchar(200), 
+	p_estado varchar(12)
+)
+RETURNS boolean AS $$ 
+Begin 
+	update evaluacion set 
+			id_empresa = p_id_empresa, id_tipo_evaluacion =	p_id_tipo_evaluacion,
+			id_evaluador_lider = p_id_evaluador_lider, fecha = p_fecha,
+			hora_inicio = p_hora_inicio, hora_fin = p_hora_fin,
+			conclusion = p_conclusion, descripcion = p_descripcion, 
+			estado= p_estado
+	where id = p_id;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from modificar_evaluacion(3,2, 1, 1, '20/10/2020', '09:00', '11:00', '', 'Esta evaluación tiene carácter de urgencia', 'INACTIVO');
+select * from evaluacion;
+
+-----3.- Eliminar Evaluación-----------
+create or replace function eliminar_evaluacion(p_id int)
+RETURNS boolean AS $$ 
+Begin 
+	delete from evaluacion where id = p_id;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from eliminar_evaluacion(3);
+select * from evaluacion;
+
+-----4.- Listar Evaluaciones -----------
+create or replace function listar_evaluaciones()
+RETURNS table ("N° Expediente" varchar(30), "Razón Social" varchar(150), "Estado" varchar(12))
+AS $$ 
+Begin 
+	return query
+		select em.num_expediente, em.razon_social, e.estado
+		from empresa em inner join evaluacion e ON em.id = e.id_empresa;
+end;
+$$ language 'plpgsql';
+
+select * from listar_evaluaciones();

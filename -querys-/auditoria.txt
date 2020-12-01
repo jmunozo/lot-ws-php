@@ -1,0 +1,208 @@
+--FUNCIONES - AUDITORIA
+--1.- Registrar Auditoría
+--2.- Registrar Auditoría NUEVO+
+--3.- Modificar Auditoría
+--4.- Dar Baja Auditoría
+--5.- Listar Auditorías
+
+-----INSERT AUDITORÍA---
+
+insert into auditoria
+			(
+				id, id_empresa,	id_tipo_auditoria, id_auditor_lider, fecha,
+				codigo_nace, criterios, objetivos, auditores, auditores_practicantes,
+				expertos_tecnicos, observadores, resumen_procesos, fecha_entrega_informe,
+				num_informe, descripcion, estado
+			)
+values		(
+				1, 1, 1, 1, '10/10/2020', '49.41/ 52.10', 'Los criterios son los siguientes:...', 
+			   'Estos son los objetivos', 'José, Luis, Juan', 'Pepe, Pepito', 
+				'Tecnico1, Tecnico 2', 'Observador1','Compras, Ventas','30/12/2020', 
+				'Informe 01', 'Este es el primer informe', 'ACTIVO'
+			);
+
+select * from auditoria;
+
+
+-----1.- Registrar Auditoría general-----------
+create or replace function registrar_auditoria
+(
+	p_id_empresa int,
+	p_id_tipo_auditoria int,
+	p_id_auditor_lider int,
+	p_fecha varchar(50),
+	p_codigo_nace varchar(20),
+	p_criterios varchar(500),
+	p_objetivos varchar(1500),
+	p_auditores varchar(1500),
+	p_auditores_practicantes varchar(1500),
+	p_expertos_tecnicos varchar(1500),
+	p_observadores varchar(1500),
+	p_resumen_procesos varchar(3000),
+	p_fecha_entrega_informe varchar(50),
+	p_num_informe varchar(20),
+	p_descripcion varchar(200)
+)
+RETURNS boolean AS $$ 
+Declare
+	v_id int;
+Begin 
+	--Seleccionar el último id;
+	select MAX(COALESCE(id, 0)+ 1) from auditoria into v_id;
+	
+	insert into auditoria
+			(
+				id,	id_empresa,	id_tipo_auditoria, id_auditor_lider, fecha,
+				codigo_nace, criterios, objetivos, auditores, auditores_practicantes,
+				expertos_tecnicos, observadores, resumen_procesos, fecha_entrega_informe,
+				num_informe, descripcion, estado
+			) 
+	values (
+				v_id, p_id_empresa, p_id_tipo_auditoria, p_id_auditor_lider, p_fecha,
+				p_codigo_nace, p_criterios, p_objetivos, p_auditores, p_auditores_practicantes,
+				p_expertos_tecnicos, p_observadores, p_resumen_procesos, p_fecha_entrega_informe,
+				p_num_informe, p_descripcion, 'ACTIVO'
+			);	
+	RETURN true;
+end;
+$$ language 'plpgsql';
+
+select *  from registrar_auditoria(
+					2, 2, 2, '30/10/2020', '49.41/ 52.10', 
+					'Estos son los criterios:...', 
+					'Estos son los objetivos', 'Joselito', 'Pedro', 
+					'Tecnico1, Tecnico 2', 'Observador1','Compras, Ventas','30/12/2020', 
+					'Informe 01', 'Este es el primer informe'
+				);
+select * from auditoria;
+
+
+-----2.- Registrar Auditoría NUEVO+-----------
+create or replace function registrar_auditoria_nuevo
+(
+	p_id_empresa int,
+	p_id_tipo_auditoria int,
+	p_norma int, --ID de normas que se evaluarán...
+	p_id_auditor_lider int
+)
+RETURNS varchar AS $$ 
+Declare
+	v_id int;
+	v_id_norma int;
+Begin 
+	--Seleccionar el último id;
+	select MAX(COALESCE(id, 0)+ 1) from auditoria into v_id;
+	select v_id into v_id_norma;
+	
+	RAISE NOTICE 'IDAuditoría: %, IDNorma:%', v_id, v_id_norma;
+	insert into auditoria
+			(
+				id,	id_empresa,	id_tipo_auditoria, 
+				id_auditor_lider, estado
+			) 
+	values (
+				v_id, p_id_empresa, p_id_tipo_auditoria, 
+				p_id_auditor_lider, 'ACTIVO'
+			);
+			
+	perform * from registrar_auditoria_tipo_norma(v_id_norma, p_norma);
+			
+	RETURN v_id, v_id_norma;
+end;
+$$ language 'plpgsql';
+
+select *  from registrar_auditoria_nuevo(1, 1, 4, 1);
+
+select * from auditoria;
+
+
+-----3.- Modificar Auditoría -----------
+create or replace function modificar_auditoria
+(
+	p_id int,
+	p_id_empresa int,
+	p_id_tipo_auditoria int,
+	p_id_auditor_lider int,
+	p_fecha varchar(50),
+	p_codigo_nace varchar(20),
+	p_criterios varchar(500),
+	p_objetivos varchar(1500),
+	p_auditores varchar(1500),
+	p_auditores_practicantes varchar(1500),
+	p_expertos_tecnicos varchar(1500),
+	p_observadores varchar(1500),
+	p_resumen_procesos varchar(3000),
+	p_fecha_entrega_informe varchar(50),
+	p_num_informe varchar(20),
+	p_descripcion varchar(200),
+	p_estado varchar(12)
+)
+RETURNS boolean AS $$ 
+Begin 
+	update auditoria set 
+	 			id_empresa = p_id_empresa, id_tipo_auditoria = p_id_tipo_auditoria, 
+				id_auditor_lider = p_id_auditor_lider, fecha = p_fecha,
+				codigo_nace = p_codigo_nace, criterios = p_criterios, 
+				objetivos = p_objetivos, auditores = p_auditores, 
+				auditores_practicantes = p_auditores_practicantes,
+				expertos_tecnicos = p_expertos_tecnicos, 
+				observadores = p_observadores, resumen_procesos = p_resumen_procesos,
+				fecha_entrega_informe = p_fecha_entrega_informe,
+				num_informe = p_num_informe, descripcion = p_descripcion,
+				estado = p_estado
+	where id = p_id;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from modificar_auditoria (2, 1, 1, 1, '20/10/2020', '49.41/ 52.10', 
+							'Estos son los criterios:...', 
+							'Estos son los objetivos', 'Joselito', 'Pedro', 
+							'Tecnico1, Tecnico 2', 'Observador1','Compras, Ventas','30/12/2020', 
+							'Informe 01', 'Este es el primer informe', 'INACTIVO'
+						);
+
+select * from auditoria;
+
+-----4.- Dar Baja a Auditoria -----------
+create or replace function darbaja_auditoria(p_id int)
+RETURNS boolean AS $$ 
+Declare 
+	v_estado varchar(12);
+Begin 
+	--Verificar si es activo o de baja--
+	select estado from auditoria where id = p_id into v_estado;
+	if(v_estado = 'DE BAJA') then
+		RAISE EXCEPTION 'Esta auditoria ya ha sido dado de baja.';
+	else
+		update auditoria set estado = 'DE BAJA' where id = p_id;
+	END IF;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from darbaja_auditoria(2);
+select * from auditoria
+
+-----5.- Listar Auditorias -----------
+--La primera lista que aparece cuando vamos al botón AUDITORÍAS.
+create or replace function listar_auditorias()
+RETURNS table ("EMPRESA" varchar(150), "TIPO AUDITORÍA" varchar(100), 
+			   "NORMA(S)" text, "ESTADO" varchar(12))
+AS $$ 
+Begin 
+	return query
+		select e.razon_social, ta.nombre, STRING_AGG (tn.nombre, ', ') Lista_normas, a.estado
+		from auditoria_tipo_norma atn 
+		inner join auditoria a on atn.id_auditoria = a.id
+		inner join tipo_auditoria ta on a.id_tipo_auditoria = ta.id
+		inner join empresa e on a.id_empresa = e.id
+		inner join tipo_norma tn on tn.id = atn.id_tipo_norma
+		GROUP BY
+			e.razon_social, ta.nombre, a.estado
+		order by 
+			e.razon_social, ta.nombre;
+end;
+$$ language 'plpgsql';
+
+select * from listar_auditorias();

@@ -1,0 +1,44 @@
+--FUNCIONES - PAC_CAMPO
+--1.- Registrar PAC_CAMPO
+--2.- Eliminar PAC_CAMPO
+
+-----INSERT PAC_CAMPO---
+insert into pac_campo
+			(id, id_pac_detalle, campo)
+	values 
+			(11, 1, 'Área/Departamento/Proceso');
+
+select * from pac_campo;
+
+-----1.- Registrar Pac_campo -----------
+create or replace function registrar_pac_campo
+(
+	p_id int,
+	p_id_pac_detalle int,
+	p_campo varchar(200)
+)
+RETURNS boolean AS $$ 
+Begin 	
+	insert into pac_campo
+			(id, id_pac_detalle, campo)	
+	values (p_id, p_id_pac_detalle, p_campo);
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from registrar_pac_campo
+				(13, 1, 'Documento de Referencia');
+				
+select * from pac_campo;
+
+-----2.- Eliminar Pac_campo -----------
+create or replace function eliminar_pac_campo(p_id int)
+returns boolean AS $$
+BEGIN 
+	delete from pac_campo where id = p_id;
+return true;
+END;
+$$ language 'plpgsql';
+
+select * from eliminar_pac_campo(13);
+select * from pac_campo;

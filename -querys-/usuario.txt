@@ -1,0 +1,114 @@
+--FUNCIONES:
+--1.- Registrar Usuario
+--2.- Modificar Usuario
+--3.- Dar Baja Usuario
+--4.- Listar Usuarios General
+--5.- Listar Usuarios Activo
+
+-----INSERT USUARIO---
+
+insert into usuario values(1, 'ADMINISTRADOR', 'Horacio Vergara', 'horacio@lotplus.com', md5('1234'), 'ACTIVO');
+insert into usuario values(2, 'USUARIO', 'Jhonatan Espejo', 'jhonatan@lotplus.com', md5('123'), 'ACTIVO');
+
+select * from usuario
+
+-----1.- Registrar Usuario-----------
+create or replace function registrar_usuario
+(
+	p_rol varchar (100), 
+ 	p_nombres varchar(250),
+ 	p_correo varchar (250),
+ 	p_clave varchar (32),
+ 	p_firma varchar(300)
+)
+RETURNS boolean AS $$ 
+Declare
+	v_id int;
+	v_cantidad int;
+Begin 
+	--Seleccionar el último id;
+	select MAX(COALESCE(id, 0)+ 1) from usuario into v_id;
+	--Verificar si existe el correo;
+	select count(*) from usuario where correo = p_correo into v_cantidad;
+	
+	IF(v_cantidad > 0) then
+		RAISE EXCEPTION 'El correo ingresado ya existe. Por favor, ingrese otro!!';
+	ELSE
+		insert into usuario(id,	rol, nombres, correo, clave, estado, firma) 
+		values (v_id, p_rol, p_nombres, p_correo, md5(p_clave), 'ACTIVO', p_firma);	
+	END IF;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select  from registrar_usuario('USUARIO', 'Luis Rojas', 'lrojasa@lotplus.com', '1234', '');
+
+-----2.- Modificar Usuario -----------
+create or replace function modificar_usuario
+(
+	p_id int,
+	p_rol varchar (100), 
+ 	p_nombres varchar(250),
+ 	p_correo varchar (250),
+ 	p_clave varchar (32),
+	p_estado varchar(12),
+ 	p_firma varchar(300)
+)
+RETURNS boolean AS $$ 
+Begin 
+	update usuario set 
+			rol = p_rol, nombres = p_nombres, correo = p_correo, clave = md5(p_clave), 
+			estado = p_estado, firma = p_firma
+	where id = p_id;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from modificar_usuario(4,'USUARIO', 'José Rojas', 'jrojas@lotplus.com', '12345', 'INACTIVO', '');
+
+select * from usuario
+
+-----3.- Dar Baja a Usuario -----------
+create or replace function darbaja_usuario(p_id int)
+RETURNS boolean AS $$ 
+Declare 
+	v_estado varchar(12);
+Begin 
+	--Verificar si es activo o de baja--
+	select estado from usuario where id = p_id into v_estado;
+	if(v_estado = 'DE BAJA') then
+		RAISE EXCEPTION 'Este usuario ya ha sido dado de baja.';
+	else
+		update usuario set estado = 'DE BAJA' where id = p_id;
+	END IF;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select  from darbaja_usuario(4);
+
+-----4.- Listar Usuarios GENERAL -----------
+create or replace function listar_usuarios_general()
+RETURNS table (id int, rol varchar(12), nombres varchar(250), correo varchar(250), 
+			   clave varchar(32),estado varchar(12),firma varchar(300), pais varchar(50))
+			   AS $$ 
+Begin 
+	return query
+		select * from usuario;
+end;
+$$ language 'plpgsql';
+
+select * from listar_usuarios_general();
+
+-----5.- Listar Usuarios ACTIVOS -----------
+create or replace function listar_usuarios()
+RETURNS table ("EMAIL" varchar(250), "PAÍS" varchar(50), "ROL" varchar(12), 
+			   "NOMBRES Y APELLIDOS" varchar(250),  "ESTADO" varchar(12) )
+AS $$ 
+Begin 
+	return query
+		select correo, pais, rol, nombres, estado from usuario where estado = 'ACTIVO';
+end;
+$$ language 'plpgsql';
+
+select * from listar_usuarios();

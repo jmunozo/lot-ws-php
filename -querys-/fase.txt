@@ -1,0 +1,43 @@
+--FUNCIONES - FASE
+--1.- Registrar FASE
+--2.- Eliminar FASE
+
+--INSERT ESTÁNDAR_AUDITORIA_TEMPORAL
+insert into fase (id,	fase, descripcion)
+		values	(1, 'FASE UNO', 'Este es el inicio'); 
+
+select * from fase;
+
+-----1.- Registrar FASE-----------
+create or replace function registrar_fase
+(
+	p_fase varchar(100),
+	p_descripcion varchar(300)
+)
+RETURNS boolean AS $$ 
+Declare
+	v_id int;
+Begin 
+	--Seleccionar el último id;
+	select MAX(COALESCE(id, 0)+ 1) from fase into v_id;
+	
+	insert into fase (id, fase, descripcion)
+			values  (v_id, p_fase, p_descripcion); 
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select *  from registrar_fase ('FASE DOS', 'Esta es la fase 2');
+select * from fase;
+
+-----2.- Eliminar Fase -----------
+create or replace function eliminar_fase(p_id int)
+RETURNS boolean AS $$ 
+Begin 
+	delete from fase where id = p_id;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from eliminar_fase(2);
+select * from fase;

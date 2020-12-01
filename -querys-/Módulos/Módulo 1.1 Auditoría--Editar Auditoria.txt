@@ -1,0 +1,200 @@
+--------------------Listar empresa 2---------------------
+CREATE OR REPLACE FUNCTION listar_empresas_2 (p_id int)
+    RETURNS TABLE(
+				"N° Expediente" varchar(20), 
+				"Nombre" varchar(150),
+				"Ruc" varchar(11), 
+				"Representante Legal" varchar(250),
+				"Correo" varchar(150), 
+				"Dirección" varchar(200),
+				"Multisitio" int,
+				"Número de trabajadores" int,
+				"Turno" varchar(100) , 
+				"Teléfono/Celular" varchar(50), 
+				"Alcance" varchar(1000), 
+				"Justificación Exlusión Alcance" varchar(1000),
+				"Gerente General" varchar (250),
+				"Persona de contacto" varchar(250)
+	) 
+AS $$
+	begin
+		return query
+		select				
+			ev.num_expediente, 
+			emp.razon_social, emp.ruc, emp.rep_legal, emp.correo,
+			emp.direccion, emp.multisitio, emp.num_trabajadores, 
+			emp.turno, emp.telefono, emp.alcance, emp.justi_exclusion, 
+			emp.gerente_general, emp.persona_contacto
+		FROM empresa emp 
+			inner join expediente_empresa ee on emp.id = ee.id_empresa
+			inner join evaluacion ev on ee.id_evaluacion = ev.id
+		where emp.id = p_id;
+		
+		EXCEPTION
+		when others then
+			RAISE EXCEPTION '%', SQLERRM;		
+	end;
+$$
+language 'plpgsql';
+
+select * from listar_empresas_2(2)
+
+--------------------------------MODIFCAR EMPRESA 2-----------
+
+CREATE OR REPLACE FUNCTION modificar_empresa_2(	
+	p_id int,
+	p_rep_legal varchar(250),
+	p_correo varchar(150),
+	p_direccion varchar(200),
+	p_multisitio int,
+	p_num_trabajadores int,
+	p_turno varchar (100),
+	p_telefono varchar(50),
+	p_alcance varchar(1000),
+	p_justi_exclusion varchar(1000),
+	p_gerente_general varchar(250),
+	p_persona_contacto varchar(250),
+	p_estado varchar(12)
+)
+    RETURNS TABLE(estado integer, mensaje character varying) 
+AS $$
+	begin
+		update empresa
+		set 
+			rep_legal = p_rep_legal,
+			correo = p_correo,
+			direccion = p_direccion,
+			multisitio = p_multisitio,
+			num_trabajadores = p_num_trabajadores,
+			turno = p_turno,
+			telefono = p_telefono,
+			alcance = p_alcance,
+			justi_exclusion = p_justi_exclusion,
+			gerente_general = p_gerente_general,
+			persona_contacto = p_persona_contacto,
+			estado = p_estado
+		where id = p_id;	
+	return query select 200, 'Registro exitoso'::character varying;
+	EXCEPTION
+		when others then
+			RAISE EXCEPTION '%', SQLERRM;		
+	end;
+$$
+language 'plpgsql';
+
+select * from modificar_empresa_2
+(
+	3,
+	'Camilo Manuel',
+	'detalles@detallitos.com',
+	'CIX',
+	2,
+	30,
+	'',
+	'',
+	'Definiendo alcance...',
+	'',
+	'',
+	'Jorge Luna',
+	'ACTIVO'
+)	
+
+-----------Listar Auditoría 2-------------------------
+
+CREATE OR REPLACE FUNCTION listar_auditorias_2 (p_id int)
+    RETURNS TABLE(
+			"Fecha" varchar(50),
+			"Código NACE" varchar(20),
+			"Criterios" varchar(500),
+			"Objetivos" varchar(1500),
+			"Resumen de procesos" varchar(3000), 
+			"Auditores" varchar(1500), 
+			"Auditores practicantes" varchar(1500),
+			"Expertos técnicos" varchar(1500),
+			"Observadores" varchar(1500)
+	) 
+AS $$
+	begin
+		return query
+		select				
+			fecha, codigo_nace, criterios, objetivos, resumen_procesos, auditores, 
+			auditores_practicantes, expertos_tecnicos, observadores
+		from auditoria 
+		where id = p_id;
+
+		EXCEPTION
+		when others then
+			RAISE EXCEPTION '%', SQLERRM;		
+	end;
+$$
+language 'plpgsql';
+
+select * from listar_auditorias_2(2)
+
+
+-----------MODIFICAR AUDITORIA 2----------------------
+
+CREATE OR REPLACE FUNCTION modificar_auditoria_2(	
+	p_id int,
+	p_fecha varchar(50),
+	p_codigo_nace varchar(20),
+	p_criterios varchar(500),
+	p_objetivos varchar(1500),
+	p_auditores varchar(1500),
+	p_auditores_practicantes varchar(1500),
+	p_expertos_tecnicos varchar(1500),
+	p_observadores varchar(1500),
+	p_resumen_procesos varchar(300),
+	p_fecha_entrega_informe varchar(50),
+	p_num_informe varchar(20),
+	p_descripcion varchar(200),
+	p_estado varchar(12)
+)
+    RETURNS TABLE(estado integer, mensaje character varying) 
+AS $$
+	begin
+		update auditoria 
+		set fecha = p_fecha,
+			codigo_nace = p_codigo_nace,
+			criterios = p_criterios,
+			objetivos = p_objetivos,
+			auditores = p_auditores,
+			auditores_practicantes = p_auditores_practicantes,
+			expertos_tecnicos = p_expertos_tecnicos,
+			observadores = p_observadores,
+			resumen_procesos = p_resumen_procesos,
+			fecha_entrega_informe = p_fecha_entrega_informe,
+			num_informe = p_num_informe, 
+			descripcion = p_descripcion,
+			estado = p_estado		
+		where id = p_id;	
+	return query select 200, 'Registro exitoso'::character varying;
+
+	EXCEPTION
+		when others then
+			RAISE EXCEPTION '%', SQLERRM;		
+	end;
+$$
+language 'plpgsql';
+
+
+select * from modificar_auditoria_2
+(
+	5,
+	'20/01/2020',
+	'142.1/02',
+	'Estos son los criterios...',
+	'Estos son los objetivos...',
+	'Estos son los auditores.',
+	'Auditores practicantes: ',
+	'Auditores expertos:',
+	'Las observaciones son:',
+	'El resumen de los procesos:',
+	'20/01/2021',
+	'Informe N° 002',
+	'Descricao: ',
+	'INACTIVO'
+);
+
+select * from auditoria;
+

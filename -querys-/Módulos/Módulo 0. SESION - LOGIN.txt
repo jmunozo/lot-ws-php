@@ -1,0 +1,64 @@
+----- VALIDAR SESIÓN ----------------------
+
+CREATE OR REPLACE FUNCTION validar_sesion(
+						p_correo varchar(250),
+						p_clave varchar(32)
+					)
+RETURNS TABLE(
+				estado integer, 
+				rol  varchar(100), 
+				nombre varchar(250)
+			)
+AS $$
+DECLARE
+	v_resultado record;
+	v_estado int;
+	v_respuesta varchar;
+BEGIN
+	BEGIN
+	--select validar_sesion('jeiner_1996@hotmail.com', md5('jeiner1996'))
+	--select validar_sesion('juan@hotmail.com', md5('juan123'))
+		-- Traer datos del usuario por p_correo
+		select u.id, u.rol, u.nombres, u.clave, u.estado, u.firma, u.pais
+		into v_resultado 
+		from usuario u
+		where u.correo= p_correo;
+		
+		v_estado = 500; -- HTTP: ERROR 500
+		
+		IF FOUND then
+		IF v_resultado.estado='INACTIVO' THEN
+			v_respuesta = 'USUARIO INACTIVO';
+		ELSE 
+			IF v_resultado.estado = 'DE BAJA' THEN
+			v_respuesta = 'USUARIO DE BAJA';
+			v_estado = 505;			
+			ELSE 
+				IF v_resultado.clave = p_clave THEN
+				v_respuesta = (v_resultado.nombres);
+				v_estado = 200;
+				ELSE 
+					v_respuesta = 'Clave incorrecta';
+				END IF;
+			END IF; 
+		END IF;
+	ELSE
+		v_respuesta = 'USUARIO NO EXISTE';
+	END IF;
+END;
+
+	IF v_estado = 200 THEN
+		return query 
+		select v_estado, v_resultado.rol::character varying, v_respuesta;
+	ELSE 
+		return query
+		select v_estado, ' - '::character varying, v_respuesta;
+	END IF;
+END
+$$ LANGUAGE 'plpgsql';
+
+select validar_sesion('yaja@lot.com', md5('yaja123')) --De Baja
+select validar_sesion('joaquin@lotplus.com', md5('1234')) --Inactivo
+select validar_sesion('horacio@lotplus.com', md5('1234')) --Activo
+
+select * from usuario 

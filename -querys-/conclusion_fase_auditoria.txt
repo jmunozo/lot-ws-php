@@ -1,0 +1,130 @@
+--FUNCIONES - CONCLUSIÓN_FASE_AUDITORÍA
+--1.- Registrar CONCLUSIÓN_FASE_AUDITORÍA
+--2.- Modificar CONCLUSIÓN_FASE_AUDITORÍA
+--3.- Eliminar CONCLUSIÓN_FASE_AUDITORÍA
+--4.- Listar CONCLUSIÓN_FASE_AUDITORÍA
+--5.- Listar  todas las conlusiones/fase correspondientes a una auditoría
+
+--INSERT CONCLUSIÓN_FASE_AUDITORÍA
+insert into conclusion_fase_auditoria 
+				(id_auditoria, id_fase,
+				 descripcion, conclusion, fila)
+values		(1, 1, 'La Fase 1 de Auditoria de Certificación 
+			 ha sido exitosa en el cumplimiento de los objetivos
+			 de la presente auditoria:', 
+			'SÍ', 0); 
+
+select * from conclusion_fase_auditoria;
+
+-----1.- Registrar CONCLUSIÓN_FASE_AUDITORÍA -----------
+create or replace function registrar_conclusion_fase_auditoria
+(
+	p_id_auditoria int,		--Referencia de la tabla AUDITORÍA
+	p_id_fase int,			--Referencia de la tabla FASE 	
+	p_descripcion varchar(3000), 
+	p_conclusion varchar(3000), 
+	p_fila int				--Representa el número de la conclusión. 
+)
+RETURNS boolean AS $$ 
+Begin 
+
+	insert into conclusion_fase_auditoria
+			(id_auditoria, id_fase, descripcion, conclusion, fila)
+	values  (p_id_auditoria, p_id_fase, p_descripcion, p_conclusion, p_fila); 
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select *  from registrar_conclusion_fase_auditoria 
+				(1,2, 'Con base en la información proporcionada, el sistema está diseñado 
+				 para identificar y gestionar el cumplimiento de los requisitos legales, 
+				 reglamentarios y contractuales	', '',2);
+select * from conclusion_fase_auditoria;
+
+-----2.- Modificar CONCLUSIÓN_FASE_AUDITORÍA -----------
+create or replace function modificar_conclusion_fase_auditoria
+(
+	p_id_auditoria int,		--Referencia de la tabla AUDITORÍA
+	p_id_fase int,			--Referencia de la tabla FASE 	
+	--p_descripcion varchar(3000), --No se debe modificar
+	p_conclusion varchar(3000), 
+	p_fila int				--Representa el número de la conclusión. 
+)
+RETURNS boolean AS $$ 
+Begin 
+	update conclusion_fase_auditoria
+	set conclusion = p_conclusion
+	where id_auditoria = p_id_auditoria and id_fase = p_id_fase and fila = p_fila;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from modificar_conclusion_fase_auditoria(1,1, 'NO',3);
+
+select * from conclusion_fase_auditoria;
+
+-----3.- Eliminar Conclusion_fase_auditoria -----------
+create or replace function eliminar_conclusion_fase_auditoria
+		(
+			p_id_auditoria int, 
+			p_id_fase int, 
+			p_fila int
+		)
+RETURNS boolean AS $$ 
+Begin 
+	delete from conclusion_fase_auditoria 
+	where id_auditoria = p_id_auditoria and id_fase = p_id_fase and fila = p_fila;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from eliminar_conclusion_fase_auditoria(1,1,3);
+select * from conclusion_fase_auditoria;
+
+-----4.- Listar Conclusion_fase_auditoria -----------
+create or replace function listar_conclusion_fase_auditoria()
+returns table("Auditoría" int, "FASE" varchar(100), "Conclusiones Auditoría" varchar(3000), 
+			  "Conclusión" varchar(3000), "ítem" int)
+AS $$ 
+	Begin
+		return query
+			select cfa.id_auditoria, f.fase, cfa.descripcion, cfa.conclusion, cfa.fila
+			from conclusion_fase_auditoria cfa 
+			inner join fase f on cfa.id_fase = f.id;
+	END;
+$$ language 'plpgsql';
+
+select * from listar_conclusion_fase_auditoria();
+
+-----4.- Listar Conclusion_fase_auditoria -----------
+create or replace function listar_conclusion_fase_auditoria()
+returns table("Auditoría" int, "FASE" varchar(100), "Conclusiones Auditoría" varchar(3000), 
+			  "Conclusión" varchar(3000), "ítem" int)
+AS $$ 
+	Begin
+		return query
+			select cfa.id_auditoria, f.fase, cfa.descripcion, cfa.conclusion, cfa.fila
+			from conclusion_fase_auditoria cfa 
+			inner join fase f on cfa.id_fase = f.id;
+	END;
+$$ language 'plpgsql';
+
+select * from listar_conclusion_fase_auditoria();
+
+-----5.- Listar Conclusion/fase de c/auditoria -----------
+create or replace function listar_conclusionXfase(p_id_auditoria int, p_id_fase int)
+returns table("Auditoría" int, "FASE" varchar(100), "Conclusiones Auditoría" varchar(3000), 
+			  "Conclusión" varchar(3000), "ítem" int)
+AS $$ 
+	Begin
+		return query
+			select cfa.id_auditoria, f.fase, cfa.descripcion, cfa.conclusion, cfa.fila
+			from conclusion_fase_auditoria cfa 
+			inner join fase f on cfa.id_fase = f.id
+			where cfa.id_auditoria = p_id_auditoria and cfa.id_fase = p_id_fase;
+	END;
+$$ language 'plpgsql';
+
+select * from listar_conclusionXfase(1,2);
+
+select * from conclusion_fase_auditoria

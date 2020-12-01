@@ -1,0 +1,45 @@
+--FUNCIONES - AUDITORÍA_TIPO_NORMA:
+--1.- Registrar Auditoría_tipo_norma
+--2.- Eliminar Auditoría_tipo_norma
+
+-----INSERT AUDITORÍA---
+insert into auditoria_tipo_norma
+			(id, id_auditoria, id_tipo_norma)
+values		( 2, 1, 2);
+
+select * from auditoria_tipo_norma;
+
+-----1.- Registrar Auditoría-----------
+create or replace function registrar_auditoria_tipo_norma
+(
+	p_id_auditoria int,
+	p_id_tipo_norma int
+)
+RETURNS boolean AS $$ 
+Declare
+	v_id int;
+Begin 
+	--Seleccionar el último id;
+	select MAX(COALESCE(id, 0)+ 1) from auditoria_tipo_norma into v_id;
+	
+	insert into auditoria_tipo_norma
+			(id, id_auditoria, id_tipo_norma) 
+	values  (v_id, p_id_auditoria, p_id_tipo_norma);	
+	RETURN true;
+end;
+$$ language 'plpgsql';
+
+select *  from registrar_auditoria_tipo_norma(2,1);
+select * from auditoria_tipo_norma;
+
+-----2.- Eliminar Auditoria_tipo_norma -----------
+create or replace function eliminar_auditoria_tipo_norma(p_id int)
+RETURNS boolean AS $$ 
+Begin 
+	delete from auditoria_tipo_norma where id = p_id;
+RETURN true;
+end;
+$$ language 'plpgsql';
+
+select * from eliminar_auditoria_tipo_norma(3);
+select * from auditoria_tipo_norma;
